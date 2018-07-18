@@ -1,4 +1,4 @@
-package main.scala.movierank
+package movierank
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
@@ -9,35 +9,21 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movies.Movie
 
-
 object Main {
-  def main(args: Array[String]) {
-    val path: String = args(0)
-    val conf = new SparkConf().setAppName("SparkJoins").setMaster("local")
-	val context = new SparkContext(conf)
+    def main(args: Array[String]) = {
+        val path: String = args(0)
 
-    val hconf = new org.apache.hadoop.mapreduce.Job().getConfiguration
-    hconf.set("textinputformat.record.delimiter", "\n\n")
+        //configura Spark
+        val conf = new SparkConf().setAppName("SparkJoins").setMaster("local")
+        val context = new SparkContext(conf)
 
-    val usgRDD = context.newAPIHadoopFile(
-        path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text], hconf)
-    .map({ case (_, v) => v.toString })
+        val movies = load(path, context)
 
-    val blocks: RDD[Seq[String]] = usgRDD.map(_.split("\n"))
-    val movies: RDD[Movie] = blocks.map((xs :Seq[String]) => {
-        val values = Map[String, String]()
-        val res = xs.foldLeft(values)((ms: Map[String,String], element:String) => {
-            val k = element.split(':')(0).split('/')(1)
-            val v = element.split(':')(1).trim
-            ms.updated(k,v)
+
+        movies.take(3).foreach(x => {
+            println(x)
         })
-        new Movie(res)
-    })
 
-    movies.take(3).foreach(x => {
-        println(x)
-    })
-
-    context.stop()
-  }
+        context.stop()
+    }
 }
