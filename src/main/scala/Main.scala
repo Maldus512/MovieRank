@@ -7,7 +7,8 @@ import org.apache.spark.rdd.RDD
 import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
-import movies.Movie
+import movierank.movies.Movie
+import movierank.operations.FilmScore
 
 object Main {
     def main(args: Array[String]) = {
@@ -19,10 +20,7 @@ object Main {
 
         val movies = load(path, context)
 
-
-        movies.take(3).foreach(x => {
-            println(x)
-        })
+        FilmScore.compute(movies, context).foreach(println)
 
         context.stop()
     }

@@ -3,7 +3,7 @@ import org.apache.spark.rdd.RDD
 import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
-import movies.Movie
+import movierank.movies.Movie
 
 package object movierank {
     def load(path:String, context:SparkContext) = {

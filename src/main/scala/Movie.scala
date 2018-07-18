@@ -1,4 +1,4 @@
-package movies
+package movierank.movies
 
 import scala.collection.Map
 
@@ -12,6 +12,6 @@ class Movie (ms : Map[String, String]) extends Serializable {
     val summary : String = ms getOrElse ("summary", "")
     val text : String = ms getOrElse("text", "")
     override def toString = "Product: " + productId +
-     "\n\t summary: \t" + summary +
-     "\n\t score: \t" + score.toString
+        "\n\t summary: \t" + summary +
+        "\n\t score: \t" + score.toString
 }
