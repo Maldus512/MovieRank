@@ -23,7 +23,8 @@ package object movierank {
             val values = Map[String, String]()
             val res = xs.foldLeft(values)((ms: Map[String,String], element:String) => {
                 val k = element.split(':')(0).split('/')(1)
-                val v = element.split(':')(1).trim
+                val tmp = element.split(':')
+                val v = tmp.slice(1, tmp.size).foldLeft("")((a, x) => a+x.trim)
                 ms.updated(k,v)
             })
             new Movie(res)

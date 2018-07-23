@@ -10,6 +10,7 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import movierank.operations.FilmScore
 import movierank.operations.UserHelpfulness
+import movierank.operations.LengthHelpfulness
 
 object Main {
     def main(args: Array[String]) = {
