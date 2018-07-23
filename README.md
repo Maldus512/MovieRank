@@ -3,7 +3,7 @@
 ## Formato dataset
 - Id film
 - Id utente
-- utilita'
+- helpfulness
 - score
 - timestamp
 - titolo
@@ -17,7 +17,8 @@
 - **Suggerimento contenuto**: in base allo score di utilita' di un utente, riceve suggerimenti in base a utenti simili
  (su film che non ha ancora visto).
  
-- Correlazione tra review lunghe e utili
-- Correlazione tra utente e score
-- Correlazione tra film e score
-- Correlazione tra film, score e data
+- Correlazione tra review lunghe e utili -> MATTIA MA
+- Correlazione tra utente e score        -> MATTIA VE
+- Correlazione tra utente e helpfulness  -> FATTO
+- Correlazione tra film e score          -> FATTO
+- Correlazione tra film, score e data    -> FEFI
