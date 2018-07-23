@@ -9,7 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 
-object ClientScore {
+object UserHelpfulness {
     def compute(movies: RDD[Movie], context: SparkContext) = {
         val pairs = movies.map((mov) => (mov.userId, mov.helpfulness))
             .mapValues((helpfulness) => (helpfulness.split("/")(0), helpfulness.split("/")(1)))
