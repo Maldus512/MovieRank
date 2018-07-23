@@ -9,6 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import movierank.operations.FilmScore
+import movierank.operations.ClientScore
 
 object Main {
     def main(args: Array[String]) = {
@@ -20,7 +21,8 @@ object Main {
 
         val movies = load(path, context)
 
-        FilmScore.compute(movies, context).foreach(println)
+        //FilmScore.compute(movies, context).foreach(println)
+        ClientScore.compute(movies, context).foreach(println)
 
         context.stop()
     }

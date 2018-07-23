@@ -6,7 +6,7 @@ class Movie (ms : Map[String, String]) extends Serializable {
     val productId : String= ms getOrElse ("productId", "")
     val userId :String = ms getOrElse ("userId", "")
     val profileName : String = ms getOrElse ("profileName", "")
-    val utilita :String = ms getOrElse ("helpfulness", "0")
+    val helpfulness :String = ms getOrElse ("helpfulness", "0")
     val score: Float = ms getOrElse ("score", "0.0") toFloat
     val time : Long = ms getOrElse ("time", "0") toLong
     val summary : String = ms getOrElse ("summary", "")
