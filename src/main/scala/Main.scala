@@ -11,6 +11,7 @@ import movierank.movies.Movie
 import movierank.operations.FilmScore
 import movierank.operations.UserHelpfulness
 import movierank.operations.LengthHelpfulness
+import movierank.operations.FilmDateScore
 
 object Main {
     def main(args: Array[String]) = {
@@ -23,7 +24,8 @@ object Main {
         val movies = load(path, context)
 
         //FilmScore.compute(movies, context).foreach(println)
-        UserHelpfulness.compute(movies, context).foreach(println)
+        //UserHelpfulness.compute(movies, context).foreach(println)
+        FilmDateScore.compute(movies, context).foreach(println)
 
         context.stop()
     }
