@@ -8,10 +8,7 @@ import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
-import movierank.operations.FilmScore
-import movierank.operations.UserHelpfulness
-import movierank.operations.LengthHelpfulness
-import movierank.operations.FilmDateScore
+import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore }
 
 object Main {
     def main(args: Array[String]) = {
@@ -25,7 +22,8 @@ object Main {
 
         //FilmScore.compute(movies, context).foreach(println)
         //UserHelpfulness.compute(movies, context).foreach(println)
-        FilmDateScore.compute(movies, context).foreach(println)
+        //FilmDateScore.compute(movies, context).foreach(println)
+        UserScore.compute(movies, context).foreach(println)
 
         context.stop()
     }
