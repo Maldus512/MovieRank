@@ -9,6 +9,6 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 
-trait Operation[T] {
-    def compute(movies: RDD[Movie], context: SparkContext):T
+trait Operation {
+    def compute(movies: RDD[Movie], context: SparkContext):RDD[Any]
 }
