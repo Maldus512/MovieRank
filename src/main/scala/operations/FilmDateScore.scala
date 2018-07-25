@@ -11,7 +11,7 @@ import movierank.movies.Movie
 import java.text.SimpleDateFormat
 import movierank.operations.Operation
 
-object FilmDateScore extends Operation[RDD[(String,(String, Float))]] {
+object FilmDateScore extends Operation {
     def compute(movies: RDD[Movie], context: SparkContext) = {
         val format = new SimpleDateFormat("dd-MM-yyyy")
         val date1 = format.parse("01-01-2003").getTime()/ 1000
