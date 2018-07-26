@@ -19,6 +19,7 @@ class Movie (ms : Map[String, String]) extends Serializable {
     val percentage : Option[Int] = if (total == 0) None else Some(upvotes*100/total)
 
     override def toString = "Product: " + productId +
+        "\n\t user id: \t" + userId +
         "\n\t score: \t" + score.toString +
         "\n\t helpfulness \t" + helpfulness.toString +
         "\n\t summary: \t" + summary +

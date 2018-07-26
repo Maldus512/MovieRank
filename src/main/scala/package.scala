@@ -30,4 +30,30 @@ package object movierank {
             new Movie(res)
         })
     }
+
+    def pageRank(edges: RDD[(String, String)], initialValues: RDD[(String, Double)]) : RDD[(String, Double)] = {
+        val tmplinks = edges.groupByKey()
+        var ranks = tmplinks.join(initialValues)
+                        .mapValues { case (nodes, value) => value }
+        val links = tmplinks.join(initialValues)
+                        .mapValues { case (nodes, value) => nodes }
+                        .persist()
+        for(i <- 0 until 10) {
+            val contributions = links.join(ranks).flatMap {
+                case (u, (uLinks, urank)) =>
+                uLinks.map(t => (t, urank / uLinks.size))
+            }
+            ranks = contributions.
+                reduceByKey((x,y) => x+y).
+                mapValues(v => 0.15+0.85*v)
+        }
+        ranks
+    }
+
+    def userHelpfulness(movies: RDD[Movie]) : RDD[(String, Option[Double])] = {
+        val pairs = movies.map((mov) => (mov.userId, mov.helpfulness))
+            .mapValues((helpfulness) => (helpfulness.split("/")(0).toInt, helpfulness.split("/")(1).toInt))
+        pairs.reduceByKey{ case ((score_pos1, score_tot1), (score_pos2, score_tot2)) => (score_pos1 + score_pos2, score_tot1 + score_tot2) }
+            .mapValues{ case (score_pos, score_tot) => (if (score_tot.toInt == 0) None else Some((score_pos.toDouble / score_tot.toDouble)*100)) }
+    }
 }
