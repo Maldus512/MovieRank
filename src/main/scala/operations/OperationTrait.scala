@@ -10,5 +10,5 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 
 trait Operation {
-    def compute(movies: RDD[Movie], context: SparkContext)
+    def compute(movies: RDD[Movie], context: SparkContext):RDD[Any]
 }
