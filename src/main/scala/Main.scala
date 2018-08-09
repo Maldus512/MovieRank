@@ -8,14 +8,18 @@ import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
-import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore }
+import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore, PageRank }
 
 object Main {
     def main(args: Array[String]) = {
-        val path: String = args(0)
+        val path: String ="s3a://simple-spark-deploy-bucket-zavy/movies.txt"//args(0)
 
         //configura Spark
-        val conf = new SparkConf().setAppName("SparkJoins").setMaster("local")
+        val conf = new SparkConf()
+                           .setAppName("SparkJoins")
+                           .setMaster("local")
+                           .set("spark.hadoop.validateOutputSpecs", "false")
+                           
         val context = new SparkContext(conf)
 
         val movies = load(path, context)
