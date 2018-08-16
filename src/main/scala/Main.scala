@@ -7,12 +7,14 @@ import org.apache.spark.rdd.RDD
 import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
+import java.io._
 import movierank.movies.Movie
 import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore, PageRank }
 
 object Main {
     def main(args: Array[String]) = {
-        val path: String ="s3a://simple-spark-deploy-bucket-zavy/movies.txt"//args(0)
+        //"s3a://simple-spark-deploy-bucket-zavy/movies.txt"
+        val path: String =args(0)
 
         //configura Spark
         val conf = new SparkConf()
@@ -27,7 +29,13 @@ object Main {
         //FilmScore.compute(movies, context).foreach(println)
         //UserHelpfulness.compute(movies, context).foreach(println)
         //FilmDateScore.compute(movies, context).foreach(println)
-        UserScore.compute(movies, context).foreach(println)
+        //UserScore.compute(movies, context).foreach(println)
+        val result = PageRank.compute(movies, context)
+        
+        result.foreach(println)
+
+        deleteRecursively(new File("/tmp/out"))
+        result.saveAsTextFile("/tmp/out")
 
         context.stop()
     }
