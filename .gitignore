@@ -1,3 +1,7 @@
 project
 target
+src/main/resources/hdfs-site.xml
+*.pem
 *.old
+keys.sh
+.env/
