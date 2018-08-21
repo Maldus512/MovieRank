@@ -9,11 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import java.io._
 import movierank.movies.Movie
-<<<<<<< HEAD
-import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore }
-=======
 import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore, PageRank }
->>>>>>> 1be13cb42c441baca41b8812e4a4fa610bf4097a
 
 object Main {
     def main(args: Array[String]) = {
