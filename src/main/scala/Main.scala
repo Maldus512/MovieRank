@@ -9,11 +9,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import java.io._
 import movierank.movies.Movie
-<<<<<<< HEAD
-import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore }
-=======
 import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfulness, FilmDateScore, PageRank }
->>>>>>> 1be13cb42c441baca41b8812e4a4fa610bf4097a
 
 object Main {
     def main(args: Array[String]) = {
@@ -25,7 +21,7 @@ object Main {
                            .setAppName("SparkJoins")
                            .setMaster("local")
                            .set("spark.hadoop.validateOutputSpecs", "false")
-                           
+
         val context = new SparkContext(conf)
 
         val movies = load(path, context)
@@ -35,8 +31,12 @@ object Main {
         //FilmDateScore.compute(movies, context).foreach(println)
         //UserScore.compute(movies, context).foreach(println)
         val result = PageRank.compute(movies, context)
-        
+        /*val result = FilmDateScore.compute(movies, context)
+
         result.foreach(println)
+
+        FilmDateScore.toChart(result)*/
+
 
         deleteRecursively(new File("/tmp/out"))
         result.saveAsTextFile("/tmp/out")
