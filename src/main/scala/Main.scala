@@ -18,9 +18,9 @@ object Main {
 
         //configura Spark
         val conf = new SparkConf()
-                           .setAppName("SparkJoins")
-                           .setMaster("local")
-                           .set("spark.hadoop.validateOutputSpecs", "false")
+           .setAppName("SparkJoins")
+           .setMaster("local")
+           .set("spark.hadoop.validateOutputSpecs", "false")
 
         val context = new SparkContext(conf)
 
@@ -31,9 +31,13 @@ object Main {
         //FilmDateScore.compute(movies, context).foreach(println)
         //UserScore.compute(movies, context).foreach(println)
         //val result = PageRank.compute(movies, context)
-        val result = UserSuggestion.compute(movies, context)
 
+        val result = UserSuggestion.compute(movies, context)
         result.foreach(println)
+
+        /*val result = FilmDateScore.compute(movies, context)
+        result.foreach(println)
+        FilmDateScore.toChart(result)*/
 
         /*deleteRecursively(new File("/tmp/out"))
         result.saveAsTextFile("/tmp/out")*/
