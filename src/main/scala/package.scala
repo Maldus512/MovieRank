@@ -13,7 +13,7 @@ package object movierank {
 
         //crea RDD dove splitta ogni movie dove ci sono le righe vuote
         val usgRDD = context.newAPIHadoopFile(
-          path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text], hconf)
+            path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text], hconf)
         .map({ case (_, v) => v.toString })
 
         //crea RDD dove ogni movie è una sequenza di stringhe
@@ -61,7 +61,7 @@ package object movierank {
     def helpfulnessByScore(movies: RDD[Movie], productId:String) = {
              // Coppie valutazione del film - helpfulness della review
         val pairs = movies.filter( mov => mov.productId == productId  && !mov.percentage.isEmpty).map( mov => (mov.score, mov.percentage.get) )
-        
+
         // Helpfulness media delle review per film in base allo score assegnato
         pairs.aggregateByKey((0,0)) ((acc, value) => (acc._1+value, acc._2+1), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2+ acc2._2))
             .map { case (score, help) => (score, help._1/help._2) }
@@ -71,7 +71,7 @@ package object movierank {
     def helpfulnessByScore(movies: RDD[Movie]) = {
              // Coppie valutazione del film - helpfulness della review
         val pairs = movies.filter(mov => !mov.percentage.isEmpty).map( mov => ((mov.score, mov.productId), mov.percentage.get) )
-        
+
         // Helpfulness media delle review per film in base allo score assegnato
         pairs.aggregateByKey((0,0)) ((acc, value) => (acc._1+value, acc._2+1), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2+ acc2._2))
             .map { case (score, help) => (score, help._1/help._2) }
@@ -81,6 +81,6 @@ package object movierank {
         if (file.isDirectory)
             file.listFiles.foreach(deleteRecursively)
         if (file.exists && !file.delete)
-            throw new Exception(s"Unable to delete ${file.getAbsolutePath}")   
+            throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
     }
 }
