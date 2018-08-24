@@ -68,10 +68,19 @@ object PageRank {
     }
 
     def compute(movies: RDD[Movie], context: SparkContext) = {
-        val moviesProductId = movies.map(_.productId).distinct
-        val productId = movies.take(1)(0).productId
-        println(productId)
-        //pageRankOneMovie(movies, productId)
-        pageRankAllMovies(movies);
+        pageRankAllMovies(movies)
+        //pageRankAllMoviesInefficient(movies, context)
+    }
+
+    def pageRankAllMoviesInefficient(movies: RDD[Movie], context:SparkContext) = {
+        val moviesProductId = movies.map(_.productId).distinct.collect.toList
+        var userHelpfulnessRankings = context.emptyRDD[(String, Double)];
+
+        moviesProductId.foreach { id => userHelpfulnessRankings = userHelpfulnessRankings.union(pageRankOneMovie(movies, id))}
+        val average = userHelpfulnessRankings
+                                    .aggregateByKey((0.0,0)) ((acc, value) => (acc._1+value, acc._2+1),
+                                                                (acc1, acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2))
+                                            
+        average.map { case (userId, acc) => (userId, acc._1/acc._2) }
     }
 }

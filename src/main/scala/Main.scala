@@ -26,6 +26,8 @@ object Main {
 
         val movies = load(path, context)
 
+        val t0 = System.nanoTime()
+
         //FilmScore.compute(movies, context).foreach(println)
         //UserHelpfulness.compute(movies, context).foreach(println)
         //FilmDateScore.compute(movies, context).foreach(println)
@@ -34,9 +36,10 @@ object Main {
         
         result.foreach(println)
 
-        deleteRecursively(new File("/tmp/out"))
-        result.saveAsTextFile("/tmp/out")
+        println("ho finito")
 
+        val t1 = System.nanoTime()
+        println("Elapsed time: " + (t1 - t0)/1000000 + "ms")
         context.stop()
     }
 }
