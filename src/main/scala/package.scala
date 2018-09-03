@@ -54,7 +54,7 @@ package object movierank {
 
     def userHelpfulness(movies: RDD[Movie]) : RDD[(String, Double)] = {
         val pairs = movies.map((mov) => (mov.userId, (mov.percentage, 1)))
-            .mapValues{ (helpfulness, accumulator) => (if (helpfulness.isEmpty) (0.0, accumulator) else (helpfulness.get, accumulator) )}
+            .mapValues{ case (helpfulness, accumulator) => (if (helpfulness.isEmpty) (0, accumulator) else (helpfulness.get, accumulator) )}
             .reduceByKey{ case ((help_1, acc_1), (help_2, acc_2)) => (help_1 + help_2, acc_1 + acc_2) }
         pairs.mapValues{ case (help, num_review) => (help/num_review)}
     }
