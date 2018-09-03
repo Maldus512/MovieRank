@@ -13,8 +13,8 @@ import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfu
 
 object Main {
     def main(args: Array[String]) = {
-        //"s3a://simple-spark-deploy-bucket-zavy/movies.txt"
-        val path: String =args(0)
+        val path: String = "s3a://movierank-deploy-bucket/movies500m.txt"
+        //val path: String =args(0)
 
         //configura Spark
         val conf = new SparkConf()
@@ -27,19 +27,19 @@ object Main {
         val movies = load(path, context)
 
         //FilmScore.compute(movies, context).foreach(println)
-        //UserHelpfulness.compute(movies, context).foreach(println)
+        UserHelpfulness.compute(movies, context).foreach(println)
         //FilmDateScore.compute(movies, context).foreach(println)
         //UserScore.compute(movies, context).foreach(println)
         //val result = PageRank.compute(movies, context).foreach(println)
-        val result = UserSuggestion.compute(movies, context).foreach(println)
+        //val result = UserSuggestion.compute(movies, context).foreach(println)
 
 
         /*val result = FilmDateScore.compute(movies, context)
         result.foreach(println)
         FilmDateScore.toChart(result)*/
 
-        deleteRecursively(new File("./tmp/out"))
-        result.saveAsTextFile("./tmp/out")
+        //deleteRecursively(new File("./tmp/out"))
+        //result.saveAsTextFile("./tmp/out")
 
         context.stop()
     }
