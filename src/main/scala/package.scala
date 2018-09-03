@@ -51,15 +51,14 @@ package object movierank {
         ranks
     }
 
-    def userHelpfulness(movies: RDD[Movie]) : RDD[(String, Option[Double])] = {
-        val pairs = movies.map((mov) => (mov.userId, mov.helpfulness))
-            .mapValues((helpfulness) => (helpfulness.split("/")(0).toInt, helpfulness.split("/")(1).toInt))
-        pairs.reduceByKey{ case ((score_pos1, score_tot1), (score_pos2, score_tot2)) => (score_pos1 + score_pos2, score_tot1 + score_tot2) }
-            .mapValues{ case (score_pos, score_tot) => (if (score_tot.toInt == 0) None else Some((score_pos.toDouble / score_tot.toDouble)*100)) }
+
+    def userHelpfulness(movies: RDD[Movie]) : RDD[(String, Double)] = {
+        val pairs = movies.map((mov) => (mov.userId, mov.percentage))
+        pairs.mapValues{ (helpfulness) => (if (helpfulness.isEmpty) 0.0 else helpfulness.get )}
     }
 
     def helpfulnessByScore(movies: RDD[Movie], productId:String) = {
-             // Coppie valutazione del film - helpfulness della review
+        // Coppie valutazione del film - helpfulness della review
         val pairs = movies.filter( mov => mov.productId == productId  && !mov.percentage.isEmpty).map( mov => (mov.score, mov.percentage.get) )
 
         // Helpfulness media delle review per film in base allo score assegnato

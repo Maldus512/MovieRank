@@ -11,7 +11,6 @@ import movierank.movies.Movie
 import movierank.pageRank
 import movierank.userHelpfulness
 import movierank.helpfulnessByScore
-import movierank.operations.Operation
 
 class SimilarityHelpfulnessEdge (var userId1 : String, var helpfulnessId1 : Double, var userId2 : String, var similar : Boolean, var degree : Double, var positiveEdge : Boolean, var helpfulnessDifference : Double) {
     override def toString = {
@@ -47,7 +46,6 @@ object PageRank {
     def global_pageRank(movies : RDD[Movie]) = {
 
         val users_helpfulness = userHelpfulness(movies)
-                                    .mapValues{ (helpfulness) => (if (helpfulness.isEmpty) 0.0 else helpfulness.get )}
 
         val users = movies.map((mov) => (mov.userId, mov))
                         .groupByKey()
@@ -77,8 +75,6 @@ object PageRank {
         // Helpfulness media degli utenti
         // (userId, helpfulness (tra 0 e 1))
         val helpfulness = userHelpfulness(movies)
-                    .filter { case (_,value) => !value.isEmpty }
-                    .mapValues { _.get}
 
         // Helpfulness media delle review per film in base allo score assegnato
         // ((score, productId), helpfulness) per un singolo productId
@@ -106,8 +102,6 @@ object PageRank {
         // Helpfulness media degli utenti
         // (userId, helpfulness (tra 0 e 1))
         val helpfulness = userHelpfulness(movies)
-                    .filter { case (_,value) => !value.isEmpty }
-                    .mapValues { _.get}
 
         // Helpfulness media delle review per film in base allo score assegnato
         // (score, helpfulness) per un singolo productId
@@ -131,7 +125,7 @@ object PageRank {
         val productId = movies.take(1)(0).productId
         //println(productId)
         //pageRankOneMovie(movies, productId)
-        //pageRankAllMovies(movies);
-        global_pageRank(movies);
+        pageRankAllMovies(movies);
+        //global_pageRank(movies);
     }
 }
