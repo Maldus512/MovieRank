@@ -32,16 +32,16 @@ object Main {
         //UserHelpfulness.compute(movies, context).foreach(println)
         //FilmDateScore.compute(movies, context).foreach(println)
         //UserScore.compute(movies, context).foreach(println)
-        //val result = PageRank.compute(movies, context)
+        //val result = PageRank.compute(movies, context).foreach(println)
+        val result = UserSuggestion.compute(movies, context).foreach(println)
 
-        val result = UserSuggestion.compute(movies, context)
-        result.foreach(println)
 
         /*val result = FilmDateScore.compute(movies, context)
         result.foreach(println)
         FilmDateScore.toChart(result)*/
 
-        println("ho finito")
+        deleteRecursively(new File("./tmp/out"))
+        result.saveAsTextFile("./tmp/out")
 
         val t1 = System.nanoTime()
         println("Elapsed time: " + (t1 - t0)/1000000 + "ms")

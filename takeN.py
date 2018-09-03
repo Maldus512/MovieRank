@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     count = int(sys.argv[1])
     readElements = ""
-    with open(sys.argv[2], 'r',  encoding='windows-1252') as f:
+    with open(sys.argv[2], 'r',  encoding='utf-8', errors='ignore') as f:
         while count > 0:
             line = f.readline()
             readElements += line
