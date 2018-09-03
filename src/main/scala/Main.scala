@@ -13,7 +13,7 @@ import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfu
 
 object Main {
     def main(args: Array[String]) = {
-        val path: String = "s3a://movierank-deploy-bucket/movies500m.txt"
+        val path: String = "s3a://zavyclouddata/movies500m.txt"
         //val path: String =args(0)
 
         //configura Spark

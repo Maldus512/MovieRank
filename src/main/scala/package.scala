@@ -23,10 +23,14 @@ package object movierank {
         blocks.map((xs :Seq[String]) => {
             val values = Map[String, String]()
             val res = xs.foldLeft(values)((ms: Map[String,String], element:String) => {
-                val k = element.split(':')(0).split('/')(1)
-                val tmp = element.split(':')
-                val v = tmp.slice(1, tmp.size).foldLeft("")((a, x) => a+x.trim)
-                ms.updated(k,v)
+                try  {
+                    val k = element.split(':')(0).split('/')(1)
+                    val tmp = element.split(':')
+                    val v = tmp.slice(1, tmp.size).foldLeft("")((a, x) => a+x.trim)
+                    ms.updated(k,v)
+                } catch {
+                    case _ : Throwable => ms
+                }
             })
             new Movie(res)
         })
