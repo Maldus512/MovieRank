@@ -4,6 +4,10 @@ import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import java.io._
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
+import scala.util.Random
+import au.com.bytecode.opencsv.CSVWriter
 import movierank.movies.Movie
 
 package object movierank {
@@ -34,6 +38,13 @@ package object movierank {
             })
             new Movie(res)
         })
+    }
+
+    def save(name: String, data: List[Array[String]]) {
+        val outputFile = new BufferedWriter(new FileWriter("/tmp/"+name+".csv")) //replace the path with the desired path and filename with the desired filename
+        val csvWriter = new CSVWriter(outputFile)
+        csvWriter.writeAll(data)
+        outputFile.close()
     }
 
     def pageRank(edges: RDD[(String, String)], initialValues: RDD[(String, Double)]) : RDD[(String, Double)] = {

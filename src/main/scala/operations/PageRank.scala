@@ -10,9 +10,11 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import movierank.pageRank
 import movierank.userHelpfulness
+import org.apache.spark.storage.StorageLevel
 import movierank.helpfulnessByScore
+import movierank.save
 
-class SimilarityHelpfulnessEdge (var userId1 : String, var helpfulnessId1 : Double, var userId2 : String, var similar : Boolean, var degree : Double, var positiveEdge : Boolean, var helpfulnessDifference : Double) {
+class SimilarityHelpfulnessEdge  (var userId1 : String, var helpfulnessId1 : Double, var userId2 : String, var similar : Boolean, var degree : Double, var positiveEdge : Boolean, var helpfulnessDifference : Double) extends Serializable{
     override def toString = {
         s"userId1 : ${this.userId1}, userId2 : ${this.userId2}, similar : ${this.similar}, degree : ${this.degree}"
     }
@@ -49,10 +51,13 @@ object PageRank {
     def global_pageRank(movies : RDD[Movie]) = {
 
         val users_helpfulness = userHelpfulness(movies)
+        users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val users = movies.map((mov) => (mov.userId, mov))
-                        .groupByKey()
+                        .aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
+                        //.groupByKey()
                         .join(users_helpfulness)
+        //users.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val users_graph = users.cartesian(users)
                             .filter({case (u1, u2) => (u1._1 != u2._1)})
@@ -135,12 +140,15 @@ object PageRank {
         average.map { case (userId, acc) => (userId, acc._1/acc._2) }
     }
 
-    def compute(movies: RDD[Movie], context: SparkContext) = {
-        val moviesProductId = movies.map(_.productId).distinct
-        val productId = movies.take(1)(0).productId
-        //println(productId)
-        //pageRankOneMovie(movies, productId)
+    def computePageRankI(movies: RDD[Movie], context: SparkContext) = {
+        pageRankAllMoviesInefficient(movies, context);
+    }
+
+    def computePageRankM(movies: RDD[Movie], context: SparkContext) = {
         pageRankAllMovies(movies);
-        //global_pageRank(movies);
+    }
+
+    def computePageRankF(movies: RDD[Movie], context: SparkContext) = {
+        global_pageRank(movies);
     }
 }

@@ -9,7 +9,6 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import java.text.SimpleDateFormat
-import movierank.operations.Operation
 import vegas._
 import vegas.render.WindowRenderer._
 
