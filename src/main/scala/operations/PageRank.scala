@@ -11,6 +11,7 @@ import movierank.movies.Movie
 import movierank.pageRank
 import movierank.userHelpfulness
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.HashPartitioner
 import movierank.helpfulnessByScore
 import movierank.save
 
@@ -67,6 +68,7 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
+        // OPERAZIONE MOLTO COSTOSA v
         val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
@@ -76,6 +78,55 @@ object PageRank {
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
         result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
+    }
+
+
+    def global_pageRank_no_cartesian(movies : RDD[Movie]) = {
+
+        val users_helpfulness = userHelpfulness(movies)
+        users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        val moviesPerUser = movies.map((mov) => (mov.userId, mov))
+                        .aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
+                        .join(users_helpfulness)
+                        .partitionBy(new HashPartitioner(100))
+                        .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        val usersPerMovie = movies.map(mov => (mov.productId, mov.userId))
+                            .aggregateByKey(List[String]()) ( (x,y) => y::x, _++_)  
+            
+        val usersToCompare = usersPerMovie.flatMap {
+                            case (productId, xs) =>
+                                val cartesianProduct = xs.flatMap(x => xs.map(y => (x,y)))
+                                                        .filter { case (u1, u2) => (u1 != u2)}
+                                cartesianProduct
+                        }.distinct()
+
+        val users_graph = usersToCompare.join(moviesPerUser)
+                                        .map { 
+                                            case (userId1, (userId2, joinedContent1)) =>
+                                                (userId2, (userId1, joinedContent1))
+                                        }
+                                        .join(moviesPerUser)
+                                        .map {
+                                            case (userId2, ((userId1, joinedContent1), joinedContent2)) =>
+                                                this.similar((userId1, joinedContent1), (userId2, joinedContent2))
+                                        }
+
+        //get only similar user with positive edge. if user A is link with user B that has lower helpfulness, this is a negative edge.
+        val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
+
+        //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
+        // OPERAZIONE MOLTO COSTOSA v
+        val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+
+        //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
+        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale (CE ALTRO MODO PER FARLO??)
+        val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
+                        .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
+                        .rightOuterJoin(users_helpfulness)  //merge user update and user not update
+
+        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None*/
     }
 
 
@@ -149,6 +200,7 @@ object PageRank {
     }
 
     def computePageRankF(movies: RDD[Movie], context: SparkContext) = {
-        global_pageRank(movies);
+        //global_pageRank(movies)
+        global_pageRank_no_cartesian(movies)
     }
 }

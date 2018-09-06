@@ -17,11 +17,12 @@ object Main {
         //val path: String = "s3a://movierank-deploy-bucket/movies500m.txt"
         val path: String =args(0)
         val algorithm: String = args(1)
+        val saveMode: String = args(2)
 
         //configura Spark
         val conf = new SparkConf()
            .setAppName("SparkJoins")
-           .setMaster("local")
+           //.setMaster("local")
            .set("spark.hadoop.validateOutputSpecs", "false")
 
         val context = new SparkContext(conf)
@@ -39,16 +40,30 @@ object Main {
             case "pagerankI" => PageRank.computePageRankI(movies, context)
             case "usersuggestion" => UserSuggestion.compute(movies, context)
         }
+        result.count()
 
         val t1 = System.nanoTime()
         //result.coalesce(1, true).saveAsTextFile("s3a://movierank-deploy-bucket/"+algorithm+path)
 
-        val data = result.collect().map { case (x,y) => Array(x.toString, y.toString)}
+        saveMode match {
+            case "local" => {
+                val data = result.collect().map { case (x,y) => Array(x.toString, y.toString)}
+                val t1_total = System.nanoTime()
+                save(algorithm, data.toList 
+                                ++ List(Array("Elapsed time: " + (t1 - t0)/1000000 + "ms"))
+                                ++ List(Array("Total elapsed time: " + (t1_total - t0_total)/1000000 + "ms"))
+                                ++ List(Array("Total collect time: " + (t1_total - t1)/1000000 + "ms")))
+            }
+            case "distributed" => {
+                result.saveAsTextFile("/tmp/out/")
+            }
+            case "s3" => {
+                result.saveAsTextFile("s3a://movierank-deploy-bucket/out/")
+            }
+            case _ : String => {} 
+        }
+
         val t1_total = System.nanoTime()
-        save(algorithm, data.toList 
-                        ++ List(Array("Elapsed time: " + (t1 - t0)/1000000 + "ms"))
-                        ++ List(Array("Total elapsed time: " + (t1_total - t0_total)/1000000 + "ms"))
-                        ++ List(Array("Total collect time: " + (t1_total - t1)/1000000 + "ms")))
         println("Elapsed time: " + (t1 - t0)/1000000 + "ms")
         println("Total elapsed time: " + (t1_total - t0_total)/1000000 + "ms")
         println("Total collect time: " + (t1_total - t1)/1000000 + "ms")
