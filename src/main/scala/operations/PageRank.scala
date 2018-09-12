@@ -24,20 +24,20 @@ class SimilarityHelpfulnessEdge  (var userId1 : String, var helpfulnessId1 : Dou
 object PageRank {
 
     /* Considera due coppie (userId, (insieme di film visti dall'utente, utilita' media dell'utente)) */
-    def similar(x: (String, (Iterable[Movie], Double)), y: (String, (Iterable[Movie], Double))) : SimilarityHelpfulnessEdge = {
+    def similar(x: (String, (Iterable[(String, Float)], Double)), y: (String, (Iterable[(String, Float)], Double))) : SimilarityHelpfulnessEdge = {
         val (xId, (xs, helpfulness_X)) = x
         val (yId, (ys, helpfulness_Y)) = y
 
         /* Intersezioni dei film visti da xId e yId */
         val commonMovies = xs.filter((x) =>
-            ys.filter((y) => y.productId == x.productId)
+            ys.filter((y) => y._1 == x._1)
                 .isEmpty == false
         )
 
 
         val differences = commonMovies.map((x) => {
-            val score1 = x.score
-            val score2 = ys.filter((y) => y.productId == x.productId).head.score
+            val score1 = x._2
+            val score2 = ys.filter((y) => y._1 == x._1).head._2
             (score1 - score2).abs
         })
 
@@ -51,7 +51,7 @@ object PageRank {
 
     def global_pageRank(movies : RDD[Movie]) = {
 
-        val users_helpfulness = userHelpfulness(movies)
+     /*   val users_helpfulness = userHelpfulness(movies)
         users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val users = movies.map((mov) => (mov.userId, mov))
@@ -77,7 +77,7 @@ object PageRank {
                         .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
-        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
+        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None*/
     }
 
 
@@ -87,9 +87,10 @@ object PageRank {
         users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val moviesPerUser = movies.map((mov) => (mov.userId, mov))
-                        .aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
+                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
+                        .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)  
                         .join(users_helpfulness)
-                        .partitionBy(new HashPartitioner(100))
+                        .partitionBy(new HashPartitioner(16))
                         .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val usersPerMovie = movies.map(mov => (mov.productId, mov.userId))

@@ -39,6 +39,10 @@ object Main {
             case "pagerankF" => PageRank.computePageRankF(movies, context)
             case "pagerankI" => PageRank.computePageRankI(movies, context)
             case "usersuggestion" => UserSuggestion.compute(movies, context)
+            case "filmdatescore" => FilmDateScore.compute(movies, context)
+            case "filmscore" => FilmScore.compute(movies, context)
+            case "lengthhelpfulness" => LengthHelpfulness.compute(movies, context)
+            case "userscore" => UserScore.compute(movies, context)
         }
         result.count()
 
