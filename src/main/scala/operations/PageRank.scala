@@ -131,7 +131,7 @@ object PageRank {
                         //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
                         .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
                         .join(users_helpfulness)
-                        .partitionBy(new HashPartitioner(16))
+                        .partitionBy(new HashPartitioner(64))
                         .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val usersPerMovie = movies.map(mov => (mov.productId, mov.userId))

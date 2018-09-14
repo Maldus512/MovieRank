@@ -21,7 +21,7 @@ object Main {
 
         //configura Spark
         val conf = new SparkConf()
-           .setAppName("SparkJoins")
+           .setAppName("MovieRank")
            //.setMaster("local[4]")
            .set("spark.hadoop.validateOutputSpecs", "false")
 
