@@ -17,7 +17,9 @@ object Main {
         //val path: String = "s3a://movierank-deploy-bucket/movies500m.txt"
         val path: String =args(0)
         val algorithm: String = args(1)
-        val saveMode: String = args(2)
+        val saveMode: String =
+            if (args.size > 2) args(2)
+            else "local"
 
         //configura Spark
         val conf = new SparkConf()
@@ -36,15 +38,17 @@ object Main {
 
         var result = algorithm match {
             case "pagerank_averageI" => PageRank.computePageRank_averageInefficient(movies, context)
-            case "pagerank_average" => PageRank.computePageRank_average(movies, context)
-            case "pagerank_naive" => PageRank.computePageRank_Naive(movies, context)
-            case "pagerank_medium" => PageRank.computePageRank_noCartesian(movies, context)
-            case "pagerank_optimize" => PageRank.computePageRank_Optimize(movies, context)
-            case "usersuggestion" => UserSuggestion.compute(movies, context)
-            case "filmdatescore" => FilmDateScore.compute(movies, context)
-            case "filmscore" => FilmScore.compute(movies, context)
-            case "lengthhelpfulness" => LengthHelpfulness.compute(movies, context)
-            case "userscore" => UserScore.compute(movies, context)
+            case "pagerank_average" => PageRank.computePageRank_average(movies)
+            case "pagerank_naive" => PageRank.computePageRank_Naive(movies)
+            case "pagerank_medium" => PageRank.computePageRank_noCartesian(movies)
+            case "pagerank_optimized" => PageRank.computePageRank_Optimized(movies)
+            case "usersuggestion_naive" => UserSuggestion.computeUserSuggestion_Naive(movies)
+            case "usersuggestion_improved" => UserSuggestion.computeUserSuggestion_ImprovedCartesian(movies)
+            case "usersuggestion_optimized" => UserSuggestion.computeUserSuggestion_Optimized(movies)
+            case "filmdatescore" => FilmDateScore.compute(movies)
+            case "filmscore" => FilmScore.compute(movies)
+            case "lengthhelpfulness" => LengthHelpfulness.compute(movies)
+            case "userscore" => UserScore.compute(movies)
         }
         result.count()
 

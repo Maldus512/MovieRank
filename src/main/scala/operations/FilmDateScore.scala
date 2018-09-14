@@ -9,12 +9,10 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import java.text.SimpleDateFormat
-import vegas._
-import vegas.render.WindowRenderer._
 
 object FilmDateScore{
 
-    def compute(movies: RDD[Movie], context: SparkContext, yearAggregate:Boolean = false):RDD[((String, String), Double)] = {
+    def compute(movies: RDD[Movie], yearAggregate:Boolean = false):RDD[((String, String), Double)] = {
         if (!yearAggregate){    // I dati ritornati sono nella forma ((B00004CQT3,2009),5.0)
             val df = new SimpleDateFormat("yyyy")
 
@@ -41,27 +39,13 @@ object FilmDateScore{
 
             pairs.reduceByKey{ case ((score1, count1), (score2, count2)) => (score1 + score2, count1 + count2) }
                 .map{ case ((key, slot), (score, count)) =>
-                                                if (slot == 0)
-                                                    ((key, "1997-2002"), score / count)
-                                                else if (slot == 1)
-                                                    ((key, "2003-2007"), score / count)
-                                                else
-                                                    ((key, "2008-2012"), score / count)
-                                        }
+                        if (slot == 0)
+                            ((key, "1997-2002"), score / count)
+                        else if (slot == 1)
+                            ((key, "2003-2007"), score / count)
+                        else
+                            ((key, "2008-2012"), score / count)
+                }
         }
-    }
-
-    // I dati passati sono nella forma ((B00004CQT3,2009),5.0)
-    def toChart(data: RDD[((String, String), Double)]) = {
-        var dataToChart = (data map {element => collection.immutable.Map("Symbol" -> element._1._1, "Period" -> element._1._2, "Score" -> element._2)}).collect()
-
-        val plot = Vegas("Prova1").
-            withData(dataToChart).
-            mark(Line).
-            encodeX("Period", Nominal).
-            encodeY("Score", Quant).
-            encodeColor(field="Symbol", dataType=Nominal, legend=Legend(orient="left", title="Symbol")).
-            encodeDetailFields(Field(field="symbol", dataType=Nominal)).
-            show
     }
 }
