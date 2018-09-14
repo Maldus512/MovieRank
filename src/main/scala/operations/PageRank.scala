@@ -34,7 +34,6 @@ object PageRank {
                 .isEmpty == false
         )
 
-
         val differences = commonMovies.map((x) => {
             val score1 = x._2
             val score2 = ys.filter((y) => y._1 == x._1).head._2
@@ -48,17 +47,14 @@ object PageRank {
         new SimilarityHelpfulnessEdge(xId, helpfulness_X, yId, similarity <= 0.0, similarity, helpfulness_difference > 0, helpfulness_difference)
     }
 
+    def global_pageRank_Naive(movies : RDD[Movie]) = {
 
-    def global_pageRank(movies : RDD[Movie]) = {
-
-     /*   val users_helpfulness = userHelpfulness(movies)
-        users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
+        val users_helpfulness = userHelpfulness(movies)
 
         val users = movies.map((mov) => (mov.userId, mov))
-                        .aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
-                        //.groupByKey()
+                        .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
+                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
                         .join(users_helpfulness)
-        //users.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val users_graph = users.cartesian(users)
                             .filter({case (u1, u2) => (u1._1 != u2._1)})
@@ -68,8 +64,53 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        // OPERAZIONE MOLTO COSTOSA v
         val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+
+        //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
+        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale
+        val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
+                        .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
+                        .rightOuterJoin(users_helpfulness)  //merge user update and user not update
+
+        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
+    }
+
+    def global_pageRank_Optimize(movies : RDD[Movie]) = {
+        val users_helpfulness = userHelpfulness(movies)
+                        .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        val users_MovList_helpfulness = movies.map((mov) => (mov.userId, mov))
+                        .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
+                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
+                        .join(users_helpfulness)
+
+        val film_user = movies.map((mov) => (mov.userId, mov.productId))
+                        //.distinct()
+                        .join(users_MovList_helpfulness)
+                        .map {
+                            case (userId1, (filmId, movList_helpfulness)) =>
+                                (filmId, (userId1, movList_helpfulness))
+                        }
+                        .persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+        val users_graph = film_user.join(film_user)
+                        .map {
+                            case (filmId, ((userId, movList_helpfulness),((userId2, movList_helpfulness2)))) =>
+                                ((userId, movList_helpfulness), (userId2, movList_helpfulness2))
+                        }
+                        .map {
+                            case (x,y) => this.similar(x,y)
+                        }
+
+        //get only similar user with positive edge. if user A is link with user B that has lower helpfulness, this is a negative edge.
+        val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
+
+        //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
+        val similarUserMap = user_graph_positiveEdge.map((x) => ((x.userId1, x.userId2), (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+                            .distinct()
+                            .map { case (((x, y), (x_degree, x_helpfulnessDifference, x_helpfulnessId1))) =>
+                                    (x, (x_degree, x_helpfulnessDifference, x_helpfulnessId1))
+                            }
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
         //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale (CE ALTRO MODO PER FARLO??)
@@ -77,25 +118,25 @@ object PageRank {
                         .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
-        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None*/
+        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
     }
 
 
-    def global_pageRank_no_cartesian(movies : RDD[Movie]) = {
+    def global_pageRank_noCartesian(movies : RDD[Movie]) = {
 
         val users_helpfulness = userHelpfulness(movies)
         users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val moviesPerUser = movies.map((mov) => (mov.userId, mov))
-                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)  
-                        .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)  
+                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
+                        .aggregateByKey(List[(String, Float)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
                         .join(users_helpfulness)
                         .partitionBy(new HashPartitioner(16))
                         .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val usersPerMovie = movies.map(mov => (mov.productId, mov.userId))
-                            .aggregateByKey(List[String]()) ( (x,y) => y::x, _++_)  
-            
+                            .aggregateByKey(List[String]()) ( (x,y) => y::x, _++_)
+
         val usersToCompare = usersPerMovie.flatMap {
                             case (productId, xs) =>
                                 val cartesianProduct = xs.flatMap(x => xs.map(y => (x,y)))
@@ -104,7 +145,7 @@ object PageRank {
                         }.distinct()
 
         val users_graph = usersToCompare.join(moviesPerUser)
-                                        .map { 
+                                        .map {
                                             case (userId1, (userId2, joinedContent1)) =>
                                                 (userId2, (userId1, joinedContent1))
                                         }
@@ -131,7 +172,7 @@ object PageRank {
     }
 
 
-    def pageRankAllMovies(movies : RDD[Movie]) = {
+    def average_pageRank(movies : RDD[Movie]) = {
         // Helpfulness media degli utenti
         // (userId, helpfulness (tra 0 e 1))
         val helpfulness = userHelpfulness(movies)
@@ -180,7 +221,7 @@ object PageRank {
         }
     }
 
-    def pageRankAllMoviesInefficient(movies: RDD[Movie], context:SparkContext) = {
+    def average_pageRank_Inefficient(movies: RDD[Movie], context:SparkContext) = {
         val moviesProductId = movies.map(_.productId).distinct.collect.toList
         var userHelpfulnessRankings = context.emptyRDD[(String, Double)];
 
@@ -188,20 +229,27 @@ object PageRank {
         val average = userHelpfulnessRankings
                                     .aggregateByKey((0.0,0)) ((acc, value) => (acc._1+value, acc._2+1),
                                                                 (acc1, acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2))
-                                            
+
         average.map { case (userId, acc) => (userId, acc._1/acc._2) }
     }
 
-    def computePageRankI(movies: RDD[Movie], context: SparkContext) = {
-        pageRankAllMoviesInefficient(movies, context);
+    def computePageRank_averageInefficient(movies: RDD[Movie], context: SparkContext) = {
+        average_pageRank_Inefficient(movies, context);
     }
 
-    def computePageRankM(movies: RDD[Movie], context: SparkContext) = {
-        pageRankAllMovies(movies);
+    def computePageRank_average(movies: RDD[Movie], context: SparkContext) = {
+        average_pageRank(movies);
     }
 
-    def computePageRankF(movies: RDD[Movie], context: SparkContext) = {
-        //global_pageRank(movies)
-        global_pageRank_no_cartesian(movies)
+    def computePageRank_Naive(movies: RDD[Movie], context: SparkContext) = {
+        global_pageRank_Naive(movies)
+    }
+
+    def computePageRank_noCartesian(movies: RDD[Movie], context: SparkContext) = {
+        global_pageRank_noCartesian(movies)
+    }
+
+    def computePageRank_Optimize(movies: RDD[Movie], context: SparkContext) = {
+        global_pageRank_Optimize(movies)
     }
 }

@@ -22,7 +22,7 @@ object Main {
         //configura Spark
         val conf = new SparkConf()
            .setAppName("SparkJoins")
-           //.setMaster("local")
+           //.setMaster("local[4]")
            .set("spark.hadoop.validateOutputSpecs", "false")
 
         val context = new SparkContext(conf)
@@ -35,9 +35,11 @@ object Main {
         val t0 = System.nanoTime()
 
         var result = algorithm match {
-            case "pagerankM" => PageRank.computePageRankM(movies, context)
-            case "pagerankF" => PageRank.computePageRankF(movies, context)
-            case "pagerankI" => PageRank.computePageRankI(movies, context)
+            case "pagerank_averageI" => PageRank.computePageRank_averageInefficient(movies, context)
+            case "pagerank_average" => PageRank.computePageRank_average(movies, context)
+            case "pagerank_naive" => PageRank.computePageRank_Naive(movies, context)
+            case "pagerank_medium" => PageRank.computePageRank_noCartesian(movies, context)
+            case "pagerank_optimize" => PageRank.computePageRank_Optimize(movies, context)
             case "usersuggestion" => UserSuggestion.compute(movies, context)
             case "filmdatescore" => FilmDateScore.compute(movies, context)
             case "filmscore" => FilmScore.compute(movies, context)
@@ -53,7 +55,7 @@ object Main {
             case "local" => {
                 val data = result.collect().map { case (x,y) => Array(x.toString, y.toString)}
                 val t1_total = System.nanoTime()
-                save(algorithm, data.toList 
+                save(algorithm, data.toList
                                 ++ List(Array("Elapsed time: " + (t1 - t0)/1000000 + "ms"))
                                 ++ List(Array("Total elapsed time: " + (t1_total - t0_total)/1000000 + "ms"))
                                 ++ List(Array("Total collect time: " + (t1_total - t1)/1000000 + "ms")))
@@ -64,7 +66,7 @@ object Main {
             case "s3" => {
                 result.saveAsTextFile("s3a://movierank-deploy-bucket/out/")
             }
-            case _ : String => {} 
+            case _ : String => {}
         }
 
         val t1_total = System.nanoTime()
