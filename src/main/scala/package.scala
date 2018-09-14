@@ -11,6 +11,10 @@ import au.com.bytecode.opencsv.CSVWriter
 import movierank.movies.Movie
 
 package object movierank {
+
+    /**
+     * Carica il dataset da file e lo inserisce in un RDD
+     */
     def load(path:String, context:SparkContext) = {
         val hconf = new org.apache.hadoop.mapreduce.Job().getConfiguration
         hconf.set("textinputformat.record.delimiter", "\n\n")
@@ -40,6 +44,9 @@ package object movierank {
         })
     }
 
+    /**
+     * Salva i dati su un file CSV predefinito
+     */
     def save(name: String, data: List[Array[String]]) {
         val outputFile = new BufferedWriter(new FileWriter("/tmp/"+name+".csv")) //replace the path with the desired path and filename with the desired filename
         val csvWriter = new CSVWriter(outputFile)
@@ -47,56 +54,65 @@ package object movierank {
         outputFile.close()
     }
 
-    def pageRank(edges: RDD[(String, String)], initialValues: RDD[(String, Double)]) : RDD[(String, Double)] = {
-        val tmplinks = edges.groupByKey()
-        var ranks = tmplinks.join(initialValues)
-                        .mapValues { case (nodes, value) => value }
-        val links = tmplinks.join(initialValues)
-                        .mapValues { case (nodes, value) => nodes }
-                        .persist()
-        for(i <- 0 until 10) {
-            val contributions = links.join(ranks).flatMap {
-                case (u, (uLinks, urank)) =>
-                uLinks.map(t => (t, urank / uLinks.size))
-            }
-            ranks = contributions.
-                reduceByKey((x,y) => x+y).
-                mapValues(v => 0.15+0.85*v)
+    /**
+     * Rappresenta un arco tra due utenti
+     *  - similar = true se sono considerati 'simili'
+     */
+    class SimilarityEdge  (var userId1 : String, var helpfulnessId1 : Double, var userId2 : String, var similar : Boolean, var degree : Double, var positiveEdge : Boolean, var helpfulnessDifference : Double) extends Serializable {
+        override def toString = {
+            s"userId1 : ${this.userId1}, userId2 : ${this.userId2}, similar : ${this.similar}, degree : ${this.degree}"
         }
-        ranks
     }
 
+    /**
+     * Crea un SimilarityEdge tra 2 utenti confrontando i film comuni ed i relativi score (per UserSuggestion)
+     */
+    def similar(x: (String, Iterable[(String, Double)]), y: (String, Iterable[(String, Double)])) : SimilarityEdge = {
+        val (xId, xs) = x
+        val (yId, ys) = y
 
-    def userHelpfulness(movies: RDD[Movie]) : RDD[(String, Double)] = {
-        val pairs = movies.map((mov) => (mov.userId, (mov.percentage, 1)))
-            .mapValues{ case (helpfulness, accumulator) => (if (helpfulness.isEmpty) (0, accumulator) else (helpfulness.get, accumulator) )}
-            .reduceByKey{ case ((help_1, acc_1), (help_2, acc_2)) => (help_1 + help_2, acc_1 + acc_2) }
-        pairs.mapValues{ case (help, num_review) => (help/num_review)}
+        /* Intersezioni dei film visti da xId e yId */
+        val commonMovies = xs.filter((x) =>
+            ys.filter((y) => y._1 == x._1)
+                .isEmpty == false
+        )
+
+        val differences = commonMovies.map((x) => {
+            val score1 = x._2
+            val score2 = ys.filter((y) => y._1 == x._1).head._2
+            (score1 - score2).abs
+        })
+
+        val similarity = if(differences.isEmpty) 5.0
+            else (differences.reduce((a,b) => a+b).toDouble / differences.size)
+
+        new SimilarityEdge(xId, 0.0, yId, similarity <= 0.0, similarity, true, 0.0)
     }
 
-    def helpfulnessByScore(movies: RDD[Movie], productId:String) = {
-        // Coppie valutazione del film - helpfulness della review
-        val pairs = movies.filter( mov => mov.productId == productId  && !mov.percentage.isEmpty).map( mov => (mov.score, mov.percentage.get) )
+    /**
+     * Crea un SimilarityEdge tra 2 utenti memorizzando anche la Helpfulness (per PageRank)
+     */
+    def similarWithHelpfulness(x: (String, (Iterable[(String, Double)], Double)), y: (String, (Iterable[(String, Double)], Double))) : SimilarityEdge = {
+        val (xId, (xs, helpfulness_X)) = x
+        val (yId, (ys, helpfulness_Y)) = y
 
-        // Helpfulness media delle review per film in base allo score assegnato
-        pairs.aggregateByKey((0,0)) ((acc, value) => (acc._1+value, acc._2+1), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2+ acc2._2))
-            .map { case (score, help) => (score, help._1/help._2) }
+        // Intersezioni dei film visti da xId e yId
+        val commonMovies = xs.filter((x) =>
+            ys.filter((y) => y._1 == x._1)
+                .isEmpty == false
+        )
 
+        val differences = commonMovies.map((x) => {
+            val score1 = x._2
+            val score2 = ys.filter((y) => y._1 == x._1).head._2
+            (score1 - score2).abs
+        })
+
+        val similarity = if(differences.isEmpty) 5.0
+            else (differences.reduce((a,b) => a+b).toDouble / differences.size)
+
+        val helpfulness_difference = (helpfulness_Y - helpfulness_X)
+        new SimilarityEdge(xId, helpfulness_X, yId, similarity <= 0.0, similarity, helpfulness_difference > 0, helpfulness_difference)
     }
 
-    def helpfulnessByScore(movies: RDD[Movie]) = {
-             // Coppie valutazione del film - helpfulness della review
-        val pairs = movies.filter(mov => !mov.percentage.isEmpty).map( mov => ((mov.score, mov.productId), mov.percentage.get) )
-
-        // Helpfulness media delle review per film in base allo score assegnato
-        pairs.aggregateByKey((0,0)) ((acc, value) => (acc._1+value, acc._2+1), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2+ acc2._2))
-            .map { case (score, help) => (score, help._1/help._2) }
-    }
-
-    def deleteRecursively(file: File): Unit = {
-        if (file.isDirectory)
-            file.listFiles.foreach(deleteRecursively)
-        if (file.exists && !file.delete)
-            throw new Exception(s"Unable to delete ${file.getAbsolutePath}")
-    }
 }

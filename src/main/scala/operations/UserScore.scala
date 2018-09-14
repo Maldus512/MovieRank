@@ -13,7 +13,7 @@ import movierank.movies.Movie
  * Compute the average score given by any user in their reviews
  */
 object UserScore {
-    def compute(movies: RDD[Movie], context: SparkContext) = {
+    def compute(movies: RDD[Movie]) = {
         val pairs = movies.map((mov) => (mov.userId, mov.score))
             .mapValues((_, 1))      // for counting when grouping by key
         pairs.reduceByKey{ case ((score1, count1), (score2, count2)) => (score1 + score2, count1 + count2) }

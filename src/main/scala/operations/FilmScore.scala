@@ -10,7 +10,7 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 
 object FilmScore {
-    def compute(movies: RDD[Movie], context: SparkContext) = {
+    def compute(movies: RDD[Movie]) = {
         val pairs = movies.map((mov) => (mov.productId, mov.score))
             .mapValues((_, 1))
         pairs.reduceByKey{ case ((score1, count1), (score2, count2)) => (score1 + score2, count1 + count2) }

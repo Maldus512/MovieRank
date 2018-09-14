@@ -10,7 +10,7 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 
 object LengthHelpfulness {
-    def compute(movies: RDD[Movie], context: SparkContext) = {
+    def compute(movies: RDD[Movie]) = {
         val Step =512;
 
         val pairs = movies.filter(_.percentage != None).map(mov => (mov.text.size/Step, mov.percentage.getOrElse(0)))
