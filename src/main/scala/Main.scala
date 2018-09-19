@@ -19,6 +19,9 @@ object Main {
         val saveMode: String =
             if (args.size > 2) args(2)
             else "local"
+        val film_id: String =
+            if (args.size > 3) args(3)
+            else null
 
         //configura Spark
         val conf = new SparkConf()
@@ -44,7 +47,7 @@ object Main {
             case "usersuggestion_naive" => UserSuggestion.computeUserSuggestion_Naive(movies)
             case "usersuggestion_improved" => UserSuggestion.computeUserSuggestion_ImprovedCartesian(movies)
             case "usersuggestion_optimized" => UserSuggestion.computeUserSuggestion_Optimized(movies)
-            case "filmdatescore" => FilmDateScore.compute(movies)
+            case "filmdatescore" => FilmDateScore.compute(movies, film_id)
             case "filmscore" => FilmScore.compute(movies)
             case "lengthhelpfulness" => LengthHelpfulness.compute(movies)
             case "userscore" => UserScore.compute(movies)

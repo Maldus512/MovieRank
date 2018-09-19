@@ -7,5 +7,5 @@ keys.sh
 .env/
 movies*
 tmp/
-start_cluster.sh
 result/
+dataset_movie/

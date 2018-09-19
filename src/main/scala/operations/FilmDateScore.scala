@@ -16,19 +16,23 @@ import java.text.SimpleDateFormat
  */
 object FilmDateScore {
 
-    def compute(movies: RDD[Movie], yearAggregate:Boolean = false):RDD[((String, String), Double)] = {
+    def compute(movies: RDD[Movie], id_movie:String = null, yearAggregate:Boolean = false):RDD[((String, String), Double)] = {
 
+        var movies_init = movies
+        if (id_movie != null){
+                movies_init = movies.filter((mov) => mov.productId == id_movie)
+        }
         // Analisi delle recenzioni anno per anno
         if (!yearAggregate) {   // I dati ritornati sono nella forma ((B00004CQT3,2009),5.0)
             val df = new SimpleDateFormat("yyyy")
 
             //map di ogni recenzione nella coppia ((id_film, anno_recenzione), score)
-            val pairs = movies.map((mov) => ((mov.productId, df.format(mov.time*1000).toString()), mov.score))
+            val pairs = movies_init.map((mov) => ((mov.productId, df.format(mov.time*1000).toString()), mov.score))
 
             //la aggregateByKey mette insieme tutte le recenzioni dello stesso film fatte nello stesso anno
             //e somma gli score dati in ogni recenzioni per poi fare la media
             pairs.aggregateByKey((0.0,0)) ((acc, value) => (acc._1 + value, acc._2 + 1), (acc1, acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2))
-                .map { case (filmId, score) => (filmId, score._1/score._2) }
+                .map { case (filmId, score) => (filmId, (((score._1/score._2) * 100).round / 100.toDouble)) }
         }
         // Analisi delle recensioni raggruppate per range fissato di anni (1997 - 2002) (2003 - 2007) (2008 - 2012)
         else {   // I dati ritornati sono nella forma ((B006JIUN2W,2008-2012),5.0)
@@ -41,7 +45,7 @@ object FilmDateScore {
              *  range 2003-2007 viene definito range 1
              *  range 2008-2012 viene definito range 2
             */
-            val pairs = movies.map((mov) =>
+            val pairs = movies_init.map((mov) =>
                                     if (mov.time <= date1)
                                         ((mov.productId, 0), mov.score)
                                     else if (mov.time > date2)
