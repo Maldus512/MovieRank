@@ -10,9 +10,14 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import java.text.SimpleDateFormat
 
-object FilmDateScore{
+/**
+ * Correlazione tra lunghezza delle recensioni e utilità
+ */
+object FilmDateScore {
 
     def compute(movies: RDD[Movie], yearAggregate:Boolean = false):RDD[((String, String), Double)] = {
+
+        // recensioni raggruppate per anno (e ovviamente per film)
         if (!yearAggregate){    // I dati ritornati sono nella forma ((B00004CQT3,2009),5.0)
             val df = new SimpleDateFormat("yyyy")
 
@@ -21,6 +26,7 @@ object FilmDateScore{
             pairs.aggregateByKey((0.0,0)) ((acc, value) => (acc._1+value, acc._2+1), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2+ acc2._2))
                 .map { case (filmId, score) => (filmId, score._1/score._2) }
         }
+        // recensioni raggruppate per range di anni (e ovviamente per film)
         else{                   // I dati ritornati sono nella forma ((B006JIUN2W,2008-2012),5.0)
             val format = new SimpleDateFormat("dd-MM-yyyy")
             val date1 = format.parse("01-01-2003").getTime()/ 1000
