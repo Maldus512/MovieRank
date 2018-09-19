@@ -87,6 +87,7 @@ object UserSuggestion {
 
     def computeUserSuggestion_Optimized(movies: RDD[Movie]) = {
         val users = this.users(movies)
+            .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val film_users_MovList = movies.map((mov) => (mov.userId, mov.productId))
                         .join(users)
@@ -94,10 +95,10 @@ object UserSuggestion {
                             case (userId1, (filmId, movList)) =>
                                 (filmId, (userId1, movList))
                         }
-                        //.persist(StorageLevel.MEMORY_AND_DISK_SER)
+                        .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val userPairs = film_users_MovList.join(film_users_MovList)
-            .map{
+            .map {
                 case (filmId, ((userId, movList1),((userId2, movList2)))) =>
                     ((userId, movList1), (userId2, movList2))
             }
