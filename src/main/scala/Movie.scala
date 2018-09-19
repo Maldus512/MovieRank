@@ -2,6 +2,9 @@ package movierank.movies
 
 import scala.collection.Map
 
+/**
+ * Rappresenta una recensione
+ */
 class Movie (ms : Map[String, String]) extends Serializable {
     val productId : String= ms getOrElse ("productId", "")
     val userId :String = ms getOrElse ("userId", "")
