@@ -104,7 +104,6 @@ object PageRank {
 
         val users = movies.map((mov) => (mov.userId, mov))
                         .aggregateByKey(List[(String, Double)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
-                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
                         .join(users_helpfulness)
 
         val users_graph = users.cartesian(users)
@@ -129,10 +128,9 @@ object PageRank {
 
     def computePageRank_noCartesian(movies: RDD[Movie]) = {
         val users_helpfulness = UserHelpfulness.compute(movies)
-        users_helpfulness.persist(StorageLevel.MEMORY_AND_DISK_SER)
+                            .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
         val moviesPerUser = movies.map((mov) => (mov.userId, mov))
-                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
                         .aggregateByKey(List[(String, Double)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
                         .join(users_helpfulness)
                         .partitionBy(new HashPartitioner(16))
@@ -163,7 +161,6 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        // OPERAZIONE MOLTO COSTOSA v
         val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
@@ -172,7 +169,7 @@ object PageRank {
                         .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
-        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None*/
+        result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
     }
 
     def computePageRank_Optimized(movies: RDD[Movie]) = {
@@ -181,11 +178,9 @@ object PageRank {
 
         val users_MovList_helpfulness = movies.map((mov) => (mov.userId, mov))
                         .aggregateByKey(List[(String, Double)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
-                        //.aggregateByKey(List[Movie]()) ( (x,y) => y::x, _++_)
                         .join(users_helpfulness)
 
         val film_user = movies.map((mov) => (mov.userId, mov.productId))
-                        //.distinct()
                         .join(users_MovList_helpfulness)
                         .map {
                             case (userId1, (filmId, movList_helpfulness)) =>
@@ -213,7 +208,7 @@ object PageRank {
                             }
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
-        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale (CE ALTRO MODO PER FARLO??)
+        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale
         val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
                         .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
