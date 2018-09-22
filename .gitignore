@@ -5,3 +5,7 @@ src/main/resources/hdfs-site.xml
 *.old
 keys.sh
 .env/
+movies*
+tmp/
+result/
+dataset_movie/

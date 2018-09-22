@@ -2,11 +2,8 @@ package movierank.operations
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkContext._
-import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import scala.collection.Map
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
-import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
 import movierank.{similar}
 import org.apache.spark.storage.StorageLevel
@@ -14,16 +11,17 @@ import org.apache.spark.HashPartitioner
 
 
 /**
- * Compute some content suggestion on users based on their score and scores given by other people
+ * Cerca di prevedere il gradimento di certi film per ogni utente, basandosi sugli score che ha assegnato
+ *  e su quelli assegnati da altri utenti con gusti 'simili'
  */
 object UserSuggestion {
-    // list of pair (User, [Movies he watched])
+    // lista di coppie (User, [Film visti])
     def users(movies : RDD[Movie]) = {
         movies.map((mov) => (mov.userId, mov))
             .aggregateByKey(List[(String, Double)]()) ( (x,y) => (y.productId, y.score)::x, _++_)
     }
 
-
+    // prima versione dell'algoritmo
     def computeUserSuggestion_Naive(movies: RDD[Movie]) = {
         val users = this.users(movies)    //: RDD[(String, Iterable[(String, Double)])]
 
@@ -52,6 +50,7 @@ object UserSuggestion {
         ) //: RDD[(String, Iterable[(String, Double)])]
     }
 
+    // cerca di migliorare riducendo la dimensione del cartesian tra utenti
     def computeUserSuggestion_ImprovedCartesian(movies: RDD[Movie]) = {
         val users = this.users(movies)     //: RDD[(String, Iterable[(String, Double)])]
 
@@ -85,19 +84,23 @@ object UserSuggestion {
         ) //: RDD[(String, Iterable[(String, Double)])]
     }
 
+    // invece di partire da tutte le coppie possibili di utenti, li associa a partire da un film comune
     def computeUserSuggestion_Optimized(movies: RDD[Movie]) = {
         val users = this.users(movies)
+            .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
+        // ad ogni film associa gli utenti che l'hanno visto
         val film_users_MovList = movies.map((mov) => (mov.userId, mov.productId))
-                        .join(users)
-                        .map {
-                            case (userId1, (filmId, movList)) =>
-                                (filmId, (userId1, movList))
-                        }
-                        //.persist(StorageLevel.MEMORY_AND_DISK_SER)
+            .join(users)
+            .map {
+                case (userId1, (filmId, movList)) =>
+                    (filmId, (userId1, movList))
+            }
+            .persist(StorageLevel.MEMORY_AND_DISK_SER)
 
+        // coppie di utenti con (almeno) un film in comune
         val userPairs = film_users_MovList.join(film_users_MovList)
-            .map{
+            .map {
                 case (filmId, ((userId, movList1),((userId2, movList2)))) =>
                     ((userId, movList1), (userId2, movList2))
             }
@@ -116,6 +119,7 @@ object UserSuggestion {
             .aggregateByKey(List[(String, Double)]()) ((x,y) => y::x, _++_)
         //: RDD[(String, List[Movie])]
 
+        // ad ogni utente si prevede uno score  ai film associati pari alla media degli altri utenti 'simili'
         userRelatedMovies.mapValues((relatedMovies) =>
             relatedMovies.groupBy(_._1)  // divide in base al film
                 .map(group => {

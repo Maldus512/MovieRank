@@ -14,12 +14,14 @@ import movierank.operations.{FilmScore, UserScore, UserHelpfulness, LengthHelpfu
 
 object Main {
     def main(args: Array[String]) = {
-        //val path: String = "s3a://movierank-deploy-bucket/movies500m.txt"
         val path: String =args(0)
         val algorithm: String = args(1)
         val saveMode: String =
             if (args.size > 2) args(2)
             else "local"
+        val film_id: String =
+            if (args.size > 3) args(3)
+            else null
 
         //configura Spark
         val conf = new SparkConf()
@@ -45,7 +47,7 @@ object Main {
             case "usersuggestion_naive" => UserSuggestion.computeUserSuggestion_Naive(movies)
             case "usersuggestion_improved" => UserSuggestion.computeUserSuggestion_ImprovedCartesian(movies)
             case "usersuggestion_optimized" => UserSuggestion.computeUserSuggestion_Optimized(movies)
-            case "filmdatescore" => FilmDateScore.compute(movies)
+            case "filmdatescore" => FilmDateScore.compute(movies, film_id)
             case "filmscore" => FilmScore.compute(movies)
             case "lengthhelpfulness" => LengthHelpfulness.compute(movies)
             case "userscore" => UserScore.compute(movies)
@@ -53,7 +55,6 @@ object Main {
         result.count()
 
         val t1 = System.nanoTime()
-        //result.coalesce(1, true).saveAsTextFile("s3a://movierank-deploy-bucket/"+algorithm+path)
 
         saveMode match {
             case "local" => {
