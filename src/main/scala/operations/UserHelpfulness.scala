@@ -8,7 +8,9 @@ import scala.collection.Map
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
 import movierank.movies.Movie
-
+/*
+    Banale calcolo della helpfulness media per ogni utente.
+ */
 object UserHelpfulness {
     def compute(movies: RDD[Movie]) : RDD[(String, Double)] = {
         val pairs = movies.map((mov) => (mov.userId, (mov.percentage, 1)))
