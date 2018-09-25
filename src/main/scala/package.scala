@@ -112,7 +112,7 @@ package object movierank {
             else (differences.reduce((a,b) => a+b).toDouble / differences.size)
 
         val helpfulness_difference = (helpfulness_Y - helpfulness_X)
-        new SimilarityEdge(xId, helpfulness_X, yId, similarity <= 0.0, similarity, helpfulness_difference > 0, helpfulness_difference)
+        new SimilarityEdge(xId, helpfulness_X, yId, similarity <= 0.9, similarity, helpfulness_difference > 0, helpfulness_difference)
     }
 
 }

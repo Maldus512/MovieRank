@@ -26,7 +26,7 @@ object Main {
         //configura Spark
         val conf = new SparkConf()
            .setAppName("SparkJoins")
-           //.setMaster("local[4]")
+           .setMaster("local[4]")
            .set("spark.hadoop.validateOutputSpecs", "false")
 
         val context = new SparkContext(conf)
@@ -51,6 +51,7 @@ object Main {
             case "filmscore" => FilmScore.compute(movies)
             case "lengthhelpfulness" => LengthHelpfulness.compute(movies)
             case "userscore" => UserScore.compute(movies)
+            case "XXX" => UserHelpfulness.compute(movies)
         }
         result.count()
 

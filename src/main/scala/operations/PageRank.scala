@@ -114,12 +114,19 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+        val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
+
+        //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
+        val similarUserMap = user_graph_positiveEdge.map((x) => ((x.userId1, x.userId2), (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
+                            .distinct()
+                            .map { case (((x, y), (x_degree, x_helpfulnessDifference, x_helpfulnessId1))) =>
+                                    (x, (1-x_degree, x_helpfulnessDifference, x_helpfulnessId1))
+                            }
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
-        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale
-        val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
-                        .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
+        // L'accumulatore rappresente: _1: sommatoria(1-degree * helpfulnessDifference); _2: somma utenti collegati; _3: è un magheggio per portarmi dietro la helpfulness iniziale
+        val result = similarUserMap.aggregateByKey((0.0, 0, 0.0)) ((acc, value) => (acc._1 + (value._1*value._2), acc._2 + 1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2, acc1._3))
+                        .map { case (userId, help_acc) => (userId, (help_acc._1/help_acc._2) + help_acc._3) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
         result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
@@ -161,12 +168,12 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+        val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
-        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale (CE ALTRO MODO PER FARLO??)
-        val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
-                        .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
+        // L'accumulatore rappresente: _1: sommatoria(1-degree * helpfulnessDifference); _2: somma utenti collegati; _3: è un magheggio per portarmi dietro la helpfulness iniziale
+        val result = similarUserMap.aggregateByKey((0.0, 0, 0.0)) ((acc, value) => (acc._1 + (value._1*value._2), acc._2 + 1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2, acc1._3))
+                        .map { case (userId, help_acc) => (userId, (help_acc._1/help_acc._2) + help_acc._3) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
         result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
@@ -201,16 +208,16 @@ object PageRank {
         val user_graph_positiveEdge = users_graph.filter((tmp) => tmp.positiveEdge && tmp.similar)
 
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        val similarUserMap = user_graph_positiveEdge.map((x) => ((x.userId1, x.userId2), (x.degree, x.helpfulnessDifference/50, x.helpfulnessId1)))
+        val similarUserMap = user_graph_positiveEdge.map((x) => ((x.userId1, x.userId2), (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
                             .distinct()
                             .map { case (((x, y), (x_degree, x_helpfulnessDifference, x_helpfulnessId1))) =>
-                                    (x, (x_degree, x_helpfulnessDifference, x_helpfulnessId1))
+                                    (x, (1-x_degree, x_helpfulnessDifference, x_helpfulnessId1))
                             }
 
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
-        //Il secondo accumulatore è un magheggio per portarmi dietro la helpfulness iniziale
-        val result = similarUserMap.aggregateByKey((0.0,0.0)) ((acc, value) => (acc._1+value._2*value._1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2))
-                        .map { case (userId, help_acc) => (userId, help_acc._1+help_acc._2) }
+        // L'accumulatore rappresente: _1: sommatoria(1-degree * helpfulnessDifference); _2: somma utenti collegati; _3: è un magheggio per portarmi dietro la helpfulness iniziale
+        val result = similarUserMap.aggregateByKey((0.0, 0, 0.0)) ((acc, value) => (acc._1 + (value._1*value._2), acc._2 + 1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2, acc1._3))
+                        .map { case (userId, help_acc) => (userId, (help_acc._1/help_acc._2) + help_acc._3) }
                         .rightOuterJoin(users_helpfulness)  //merge user update and user not update
 
         result.map((x) => if (x._2._1.isEmpty) (x._1,x._2._2) else (x._1,x._2._1.get))  //get value in Some and get 0.0 in None
