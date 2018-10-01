@@ -133,13 +133,6 @@ object PageRank {
         //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
         val similarUserMap = user_graph_positiveEdge.map((x) => (x.userId1, (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
 
-        //la differenza di helpfulness è divisa per 50 perchè l'incremento deve essere lieve ed in relazione alla similitudine (degree)
-        val similarUserMap = user_graph_positiveEdge.map((x) => ((x.userId1, x.userId2), (x.degree, x.helpfulnessDifference, x.helpfulnessId1)))
-                            .distinct()
-                            .map { case (((x, y), (x_degree, x_helpfulnessDifference, x_helpfulnessId1))) =>
-                                    (x, (1-x_degree, x_helpfulnessDifference, x_helpfulnessId1))
-                            }
-
         //l'incremento di helpfulness e' valutato moltiplicanto la diffenza di helpfulness tra gli utenti e moltiplicandola per la similitudine
         // L'accumulatore rappresente: _1: sommatoria(1-degree * helpfulnessDifference); _2: somma utenti collegati; _3: è un magheggio per portarmi dietro la helpfulness iniziale
         val result = similarUserMap.aggregateByKey((0.0, 0, 0.0)) ((acc, value) => (acc._1 + (value._1*value._2), acc._2 + 1, value._3), (acc1,acc2) => (acc1._1 + acc2._1, acc1._2 + acc2._2, acc1._3))

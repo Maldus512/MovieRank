@@ -26,7 +26,7 @@ object Main {
         //configura Spark
         val conf = new SparkConf()
            .setAppName("MovieRank")
-           //.setMaster("local[4]")
+           .setMaster("local[4]")
            .set("spark.hadoop.validateOutputSpecs", "false")
 
         val context = new SparkContext(conf)
@@ -47,11 +47,12 @@ object Main {
             case "usersuggestion_naive" => UserSuggestion.computeUserSuggestion_Naive(movies)
             case "usersuggestion_improved" => UserSuggestion.computeUserSuggestion_ImprovedCartesian(movies)
             case "usersuggestion_optimized" => UserSuggestion.computeUserSuggestion_Optimized(movies)
-            case "filmdatescore" => FilmDateScore.compute(movies, film_id)
+            case "filmdatescore" => FilmDateScore.computeFilmDateScore(movies, film_id)
+            case "filmdatescore_aggregated" => FilmDateScore.computeFilmDateScoreAggregated(movies, film_id)
             case "filmscore" => FilmScore.compute(movies)
             case "lengthhelpfulness" => LengthHelpfulness.compute(movies)
             case "userscore" => UserScore.compute(movies)
-            case "XXX" => UserHelpfulness.compute(movies)
+            case "userhelpfulness" => UserHelpfulness.compute(movies)
         }
         result.count()
 
